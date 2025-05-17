@@ -1,6 +1,22 @@
 import streamlit as st
 import requests
 import time
+from streamlit import LOCAL_HOST
+
+def poll_result(task_id):
+    url = f"{LOCAL_HOST}/result/{task_id}"
+    for _ in range(30):
+        try:
+            res = requests.get(url)
+            res.raise_for_status()
+            result_data = res.json()
+            if result_data.get("status") == "SUCCESS":
+                return result_data.get("result")
+        except Exception as e:
+            st.error(f"Error checking task: {e}")
+            break
+        time.sleep(1)
+    return None
 
 st.title("Essay Feedback and Grading App")
 
@@ -13,7 +29,7 @@ if st.button("Get Feedback and Grade"):
         with st.spinner("Sending essay for analysis..."):
             try:
                 post_response = requests.post(
-                    "http://localhost:8000/evaluate",
+                    f"{LOCAL_HOST}/evaluate",
                     json={"text": essay}
                 )
                 post_response.raise_for_status()
@@ -23,22 +39,6 @@ if st.button("Get Feedback and Grade"):
             except Exception as e:
                 st.error(f"Failed to start task: {e}")
                 st.stop()
-
-        # Poll for results
-        def poll_result(task_id):
-            url = f"http://localhost:8000/result/{task_id}"
-            for _ in range(30):  # Try for ~30s
-                try:
-                    res = requests.get(url)
-                    res.raise_for_status()
-                    result_data = res.json()
-                    if result_data.get("status") == "SUCCESS":
-                        return result_data.get("result")
-                except Exception as e:
-                    st.error(f"Error checking task: {e}")
-                    break
-                time.sleep(1)
-            return None
 
         with st.spinner("Waiting for feedback..."):
             feedback = poll_result(feedback_task_id)
