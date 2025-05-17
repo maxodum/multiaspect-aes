@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "multiaspect-aes"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+packages = [{include = "multiaspect_aes"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+celery = "^5.5.2"
+torch = "^2.7.0"
+fastapi = "^0.115.12"
+uvicorn = "^0.34.2"
+numpy = "^2.2.5"
+transformers = "^4.51.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
