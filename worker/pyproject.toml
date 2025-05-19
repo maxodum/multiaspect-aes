@@ -13,6 +13,7 @@ transformers = {extras = ["sentencepiece"], version = "^4.51.3"}
 numpy = "^2.2.6"
 protobuf = "^6.31.0"
 accelerate = "^1.7.0"
+gdown = "^5.2.0"
 
 
 [build-system]

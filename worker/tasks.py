@@ -4,9 +4,14 @@ import torch.nn as nn
 import torch.nn.init as init
 from transformers import AutoModel, AutoTokenizer, AutoModelForCausalLM
 import numpy as np
+import gdown
 import os
-from worker import BASE_DIR, PROMPT, LLM_NAME, SCORER_NAME
+from worker import PROMPT, LLM_NAME, SCORER_NAME
 
+
+url = "https://drive.google.com/file/d/17SZ-XeQuKb8D4U40PhmexOBEgvQoNFZ0/view?usp=drive_link"
+output = "best_second_model.pth"
+gdown.download(url=url, output=output, fuzzy=True)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -58,7 +63,7 @@ def init_models():
 
     model = DebertaNHeads()
     model.deberta.resize_token_embeddings(len(tokenizer))
-    with open(f'{BASE_DIR}/best_second_model.pth', 'rb') as f:
+    with open(f'best_second_model.pth', 'rb') as f:
         model.load_state_dict(torch.load(f, weights_only=True))
     model.to(DEVICE)
     model.eval()
