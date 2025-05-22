@@ -1,8 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from celery import Celery
 from celery.result import AsyncResult
 import os
+from db.session import get_async_db
+from db.models import QwkTask, FeedbackTask
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 celery = Celery("inference",
@@ -33,17 +36,30 @@ def home():
 
 
 @app.post("/evaluate", response_model=TaskIDsOut)
-def predict(essay:TextIn):
+async def predict(essay:TextIn,  db: AsyncSession = Depends(get_async_db)):
     qwk_async = celery.send_task("evaluate_qwk", args=[essay.text])
     feedback_async = celery.send_task("evaluate_feedback",  args=[essay.text])
+    
+    db.add_all([
+        QwkTask(task_id=qwk_async.id),
+        FeedbackTask(task_id=feedback_async.id),
+    ])
+    await db.commit()
+
     return TaskIDsOut(qwk_task_id=qwk_async.id,
                          feedback_task_id=feedback_async.id)
 
 
 @app.get("/result/{task_id}")
-def get_result(task_id: str):
+async def get_result(task_id: str, db: AsyncSession = Depends(get_async_db)):
     result = AsyncResult(task_id, app=celery)
     if result.ready():
+        if isinstance(result.result, dict):
+            record = await db.get(QwkTask, task_id)
+        else:
+            record = await db.get(FeedbackTask, task_id)
+        record.result = result.result
+        await db.commit()
         return {"status": result.status, "result": result.result}
     else:
         return {"status": result.status}
