@@ -10,8 +10,9 @@ from worker import PROMPT, LLM_NAME, SCORER_NAME
 
 
 url = "https://drive.google.com/file/d/17SZ-XeQuKb8D4U40PhmexOBEgvQoNFZ0/view?usp=drive_link"
-output = "best_second_model.pth"
-gdown.download(url=url, output=output, fuzzy=True)
+output = "models/best_second_model.pth"
+if not os.path.exists(output):
+    gdown.download(url=url, output=output, fuzzy=True)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -63,7 +64,7 @@ def init_models():
 
     model = DebertaNHeads()
     model.deberta.resize_token_embeddings(len(tokenizer))
-    with open(f'best_second_model.pth', 'rb') as f:
+    with open(output, 'rb') as f:
         model.load_state_dict(torch.load(f, weights_only=True))
     model.to(DEVICE)
     model.eval()

@@ -60,6 +60,9 @@ services:
               capabilities:
                 - utility 
                 - compute
+    volumes:
+      - model_weights:/app/models
+      - hf_cache:/cache/huggingface
 
   streamlit:
     build: ./streamlit
@@ -75,6 +78,8 @@ services:
 
 volumes:
   pgdata:
+  model_weights:
+  hf_cache:
 networks:
   app-network:
     driver: bridge
