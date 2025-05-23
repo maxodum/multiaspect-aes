@@ -1,6 +1,8 @@
-import streamlit as st
-import requests
 import time
+
+import requests
+
+import streamlit as st
 
 st.title("Essay Feedback and Grading App")
 
@@ -13,8 +15,7 @@ if st.button("Get Feedback and Grade"):
         with st.spinner("Sending essay for analysis..."):
             try:
                 post_response = requests.post(
-                    "http://api:8000/evaluate",
-                    json={"text": essay}
+                    "http://api:8000/evaluate", json={"text": essay}
                 )
                 post_response.raise_for_status()
                 task_ids = post_response.json()
@@ -24,10 +25,9 @@ if st.button("Get Feedback and Grade"):
                 st.error(f"Failed to start task: {e}")
                 st.stop()
 
-        # Poll for results
         def poll_result(task_id):
             url = f"http://api:8000/result/{task_id}"
-            for _ in range(30):  # Try for ~30s
+            for _ in range(30):
                 try:
                     res = requests.get(url)
                     res.raise_for_status()

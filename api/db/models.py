@@ -1,10 +1,7 @@
-from sqlalchemy import (
-    Column,
-    String,
-    JSON,
-    Text,
-)
+from sqlalchemy import JSON, Column, String, Text
+
 from .base import Base
+
 
 class QwkTask(Base):
     __tablename__ = "qwk_tasks"
