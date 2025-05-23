@@ -23,6 +23,24 @@ celery = Celery(
 
 
 class DebertaNHeads(nn.Module):
+    """
+    DeBERTa-based neural network model with multiple regression heads.
+
+    This model uses a pretrained DeBERTa transformer as a feature extractor,
+    followed by multiple linear heads (one per aspect) to predict regression
+    scores for different aspects of text evaluation.
+
+    Args:
+        model_name (str): Name or path of the pretrained model to load.
+        num_aspects (int): Number of regression heads / aspects to predict.
+
+    Attributes:
+        deberta (AutoModel): Pretrained DeBERTa transformer model.
+        regression_heads (nn.ModuleList): List of linear layers for regression.
+        sigmoid (nn.Sigmoid): Sigmoid activation to bound outputs between 0 and 1.
+        dropout (nn.Dropout): Dropout layer to reduce overfitting.
+    """
+
     def __init__(self, model_name=SCORER_NAME, num_aspects=7):
         super().__init__()
         self.deberta = AutoModel.from_pretrained(model_name)
@@ -39,12 +57,28 @@ class DebertaNHeads(nn.Module):
         self._init_weights()
 
     def _init_weights(self):
+        """
+        Initialize weights of regression heads using Xavier uniform initialization,
+        and biases to zeros.
+        """
         for head in self.regression_heads:
             init.xavier_uniform_(head.weight)
             if head.bias is not None:
                 init.zeros_(head.bias)
 
     def forward(self, input_ids, attention_mask=None, token_type_ids=None):
+        """
+        Forward pass of the model.
+
+        Args:
+            input_ids (torch.Tensor): Input token IDs.
+            attention_mask (torch.Tensor, optional): Attention mask for inputs.
+            token_type_ids (torch.Tensor, optional): Token type IDs (unused).
+
+        Returns:
+            torch.Tensor: Concatenated regression outputs for each aspect,
+                          with shape (batch_size, num_aspects).
+        """
         outputs = self.deberta(input_ids=input_ids, attention_mask=attention_mask)
         pooled_output = outputs.last_hidden_state[:, 0, :]
         pooled_output = self.dropout(pooled_output)
@@ -61,6 +95,20 @@ class DebertaNHeads(nn.Module):
 
 
 def init_models():
+    """
+    Initialize and load the models and tokenizers required for evaluation.
+
+    - Loads the tokenizer for the DeBERTa scorer model, adding special tokens.
+    - Loads the DebertaNHeads model and its pretrained weights.
+    - Loads the large language model (LLM) and tokenizer for generating feedback.
+
+    Returns:
+        tuple:
+            - model (DebertaNHeads): The loaded DeBERTa regression model.
+            - tokenizer (AutoTokenizer): Tokenizer for the scorer model.
+            - model_llm (AutoModelForCausalLM): Pretrained causal language model.
+            - tokenizer_llm (AutoTokenizer): Tokenizer for the LLM.
+    """
     tokenizer = AutoTokenizer.from_pretrained(SCORER_NAME, use_fast=True)
     special_token = "\n\n"
     tokenizer.add_special_tokens({"additional_special_tokens": [special_token]})
@@ -87,6 +135,16 @@ model, tokenizer, model_llm, tokenizer_llm = init_models()
 
 @celery.task(name="evaluate_qwk")
 def predict_aspects(essay):
+    """
+    Predict quality aspects of an essay using the DeBERTa regression model.
+
+    Args:
+        essay (str): The input essay text to evaluate.
+
+    Returns:
+        dict: A dictionary with aspect names as keys and predicted scores as values.
+              Scores are scaled to [1, 5] range with 0.5 increments.
+    """
     inputs = tokenizer(
         essay,
         padding="max_length",
@@ -117,6 +175,15 @@ def predict_aspects(essay):
 
 @celery.task(name="evaluate_feedback")
 def give_feedback(essay):
+    """
+    Generate feedback on an essay using a causal language model.
+
+    Args:
+        essay (str): The input essay text to provide feedback on.
+
+    Returns:
+        str: Generated feedback text from the language model.
+    """
     prompt = PROMPT + essay
     messages = [
         {
