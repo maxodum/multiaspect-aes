@@ -14,11 +14,11 @@
 **Project functionality:**
 
 - API
-    /evaluate - post essay for evaluation and generation of feedback, receive tasks_ids
-    /result/{task_id} - get result for task (either qwk dictionary or feedback)
+    - /evaluate - post essay for evaluation and generation of feedback, receive tasks_ids
+    - /result/{task_id} - get result for task (either qwk dictionary or feedback)
 
 - Streamlit
-    Send essay, show both QWK and feedback. Used mainly for users' convenience
+    * Send essay, show both QWK and feedback. Used mainly for users' convenience
 
 **Docker-compose content description:**
 
