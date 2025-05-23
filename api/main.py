@@ -6,6 +6,7 @@ import os
 from db.session import get_async_db
 from db.models import QwkTask, FeedbackTask
 from sqlalchemy.ext.asyncio import AsyncSession
+from prometheus_client import start_http_server, Counter, Gauge
 
 
 celery = Celery("inference",
@@ -15,6 +16,9 @@ celery = Celery("inference",
 
 app = FastAPI()
 
+start_http_server(8001)
+
+REQUEST_COUNTER = Counter('http_requests_total', 'Total HTTP Requests')
 
 class TextIn(BaseModel):
     text: str
@@ -32,11 +36,13 @@ class TaskIDsOut(BaseModel):
 
 @app.get("/")
 def home():
+    REQUEST_COUNTER.inc()
     return {'health_check': 'OK'}
 
 
 @app.post("/evaluate", response_model=TaskIDsOut)
 async def predict(essay:TextIn,  db: AsyncSession = Depends(get_async_db)):
+    REQUEST_COUNTER.inc()
     qwk_async = celery.send_task("evaluate_qwk", args=[essay.text])
     feedback_async = celery.send_task("evaluate_feedback",  args=[essay.text])
     
@@ -52,6 +58,7 @@ async def predict(essay:TextIn,  db: AsyncSession = Depends(get_async_db)):
 
 @app.get("/result/{task_id}")
 async def get_result(task_id: str, db: AsyncSession = Depends(get_async_db)):
+    REQUEST_COUNTER.inc()
     result = AsyncResult(task_id, app=celery)
     if result.ready():
         if isinstance(result.result, dict):

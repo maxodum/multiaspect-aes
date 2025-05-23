@@ -1,4 +1,29 @@
 services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - worker
+      - api
+      - streamlit
+    networks:
+      - app-network
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
   db:
     image: postgres:15-alpine
     env_file:
@@ -29,7 +54,8 @@ services:
   api:
     build: ./api
     ports:
-      - "8000:8000"
+      - "8000:8000" #api
+      - "8001:8001" #metrics
     env_file:
       - .env
     depends_on:
@@ -43,6 +69,8 @@ services:
     build:
       context: .
       dockerfile: worker/Dockerfile
+    ports:
+      - "8002:8002" #metrics only
     env_file: .env
     depends_on:
       redis:
@@ -77,6 +105,7 @@ services:
       - app-network
 
 volumes:
+  grafana-storage:
   pgdata:
   model_weights:
   hf_cache:
