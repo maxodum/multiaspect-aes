@@ -41,8 +41,8 @@ async def predict(essay:TextIn,  db: AsyncSession = Depends(get_async_db)):
     feedback_async = celery.send_task("evaluate_feedback",  args=[essay.text])
     
     db.add_all([
-        QwkTask(task_id=qwk_async.id),
-        FeedbackTask(task_id=feedback_async.id),
+        QwkTask(task_id=qwk_async.id, text=essay.text),
+        FeedbackTask(task_id=feedback_async.id, text=essay.text),
     ])
     await db.commit()
 
