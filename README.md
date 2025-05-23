@@ -49,7 +49,6 @@ DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/mydb
 DATABASE_URL_SYNC=postgresql://postgres:password@db:5432/mydb
 
 TRANSFORMERS_CACHE=/cache/huggingface
-LD_LIBRARY_PATH=/usr/local/nvidia/lib64
 ```
 3. Build the containers (might take a while)
 ```
